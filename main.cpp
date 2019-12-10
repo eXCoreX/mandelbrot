@@ -15,7 +15,7 @@
 using namespace std;
 using namespace chrono;
 
-constexpr unsigned UPSCALE = 4;
+constexpr unsigned UPSCALE = 2;
 
 constexpr unsigned WIDTH = 2880 * UPSCALE;
 constexpr unsigned HEIGTH = 1800 * UPSCALE;
@@ -190,7 +190,7 @@ int main()
 	high_resolution_clock::time_point t_start = high_resolution_clock::now();
 	create_png();
 	unsigned max_threads = thread::hardware_concurrency();
-	constexpr unsigned DIV_INTO = max(1u, HEIGTH * MAX_ITER / 1000 / 50);
+	constexpr unsigned DIV_INTO = max(1u, HEIGTH * MAX_ITER / 2000 / 50);
 	//unsigned max_threads = 1; // for test purposes
 	vector<thread> threads(max_threads);
 	unsigned prev = 0;
