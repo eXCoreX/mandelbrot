@@ -8,6 +8,7 @@
 #include <string>
 #include <cmath>
 #include <algorithm>
+#include <filesystem>
 #include <cassert>
 #include <png.h>
 #include <mutex>
@@ -15,24 +16,24 @@
 using namespace std;
 using namespace chrono;
 
-constexpr unsigned UPSCALE = 2;
+unsigned UPSCALE = 2;
 
-constexpr unsigned WIDTH = 2880 * UPSCALE;
-constexpr unsigned HEIGTH = 1800 * UPSCALE;
+unsigned WIDTH = 1920;
+unsigned HEIGTH = 1080;
 constexpr png_byte BIT_DEPTH = 8;
 constexpr png_byte COLOR_TYPE = PNG_COLOR_TYPE_RGBA;
-constexpr unsigned MAX_ITER = 50;
+unsigned MAX_ITER = 50;
 
-constexpr double kinda_zoom = 1.0 / (0.5); // change value in parenthesis
-constexpr double startx = -0.5 * kinda_zoom / 2.0;
-constexpr double starty = 0 * kinda_zoom;
+double kinda_zoom = 1.0 / (0.5); // change value in parenthesis
+double startx = -0.5 * kinda_zoom / 2.0;
+double starty = 0 * kinda_zoom;
 
-constexpr double W_FACTOR = (double)WIDTH / HEIGTH;
+double W_FACTOR = (double)WIDTH / HEIGTH;
 
-constexpr double MAX_RE = startx + W_FACTOR * kinda_zoom / 2;
-constexpr double MIN_RE = startx - W_FACTOR * kinda_zoom / 2;
-constexpr double MAX_IM = starty + kinda_zoom / 2;
-constexpr double MIN_IM = starty - kinda_zoom / 2;
+double MAX_RE = startx + W_FACTOR * kinda_zoom / 2;
+double MIN_RE = startx - W_FACTOR * kinda_zoom / 2;
+double MAX_IM = starty + kinda_zoom / 2;
+double MIN_IM = starty - kinda_zoom / 2;
 
 const char* FILENAME;
 
@@ -183,16 +184,167 @@ void draw_mandelbrot(int y, int to_y)
 	}
 }
 
-int main()
+void err_exit(string msg)
 {
-	FILENAME = ("mandelbrot_" + to_string(UPSCALE) + "x_" + to_string(WIDTH / UPSCALE) + "x" + 
-				to_string(HEIGTH / UPSCALE) + "_" + to_string(MAX_ITER) + "iters.png").c_str();
+	if (fp != nullptr)
+	{
+		write_and_close_png();
+	}
+	cin.ignore(256, '\n');
+	cout << msg << endl << "Press any key to exit..." << endl;
+	cin.get();
+	exit(1);
+}
+
+int main(int argc, char** argv)
+{
+    if(argc > 1)
+    {
+        if(argc & 1)
+        {
+            for (size_t i = 1; i < argc; i += 2)
+            {
+                if(!strncmp(argv[i], "-W", 2) || !strncmp(argv[i], "--width", 7))
+                {
+                    int __tmp = stoi(argv[i + 1]);
+                    if(__tmp > 0 && __tmp < (1 << 20))
+                    {
+                        WIDTH = (unsigned)__tmp;
+                    }
+					else
+					{
+						err_exit("Width must be int in range (1, 1048575)");
+					}
+                }
+				else if (!strncmp(argv[i], "-H", 2) || !strncmp(argv[i], "--heigth", 8))
+				{
+					int __tmp = stoi(argv[i + 1]);
+                    if(__tmp > 0 && __tmp < (1 << 20))
+                    {
+                        HEIGTH = (unsigned)__tmp;
+                    }
+					else
+					{
+						err_exit("Heigth must be int in range [1, 1048575]");
+					}
+				}
+				else if (!strncmp(argv[i], "-S", 2) || !strncmp(argv[i], "--scale", 7))
+				{
+					int __tmp = stoi(argv[i + 1]);
+                    if(__tmp > 0 && __tmp <= (1 << 6))
+                    {
+                        UPSCALE = (unsigned)__tmp;
+                    }
+					else
+					{
+						err_exit("Upscale must be int in range [1, 64]");
+					}
+				}
+				else if (!strncmp(argv[i], "-I", 2) || !strncmp(argv[i], "--iters", 7))
+				{
+					int __tmp = stoi(argv[i + 1]);
+                    if(__tmp > 0 && __tmp <= (100'000))
+                    {
+                        MAX_ITER = (unsigned)__tmp;
+                    }
+					else
+					{
+						err_exit("Max iterations must be int in range [1, 100000]");
+					}
+				}
+				else if (!strncmp(argv[i], "-Z", 2) || !strncmp(argv[i], "--zoom", 6))
+				{
+					double __tmp = stod(argv[i + 1]);
+					if (__tmp > 0 && __tmp <= 5)
+					{
+						kinda_zoom = 1 / (__tmp);
+					}
+					else
+					{
+						err_exit("Zoom must be float in range (0, 5]");
+					}
+				}
+				else if (!strncmp(argv[i], "-F", 2) || !strncmp(argv[i], "--file", 6))
+				{
+					filesystem::path p = filesystem::path(argv[i + 1]);
+					if (p.has_filename())
+					{
+						FILENAME = argv[i + 1];
+					}
+					else
+					{
+						err_exit("Wrong filename");
+					}
+				}
+				else
+				{
+					err_exit("Wrong argument");
+				}
+            }
+        }
+        else
+		{
+			err_exit("Invalid argument count. Launch program without parameters to see usage.");
+		}
+    }
+	else
+	{
+		cout << "Usage: [--width(-W) width] [--heigth(-H) heigth] -- image resolution\n"
+				"       [--scale(-S) upscale] -- upscale factor (int)\n"
+				"       [--iters(-I) iters]   -- maximum iterations in set calculation\n"
+		  	    "       [--zoom(-Z) zoom]     -- plane zoom factor, float\n"
+	  	        "       [--file(-F) filename] -- optional filename\n\n";
+		cout << "Program launched without parameters, proceed with defaults? y/n" << endl;
+		char ans;
+		cin >> ans;
+		if (ans == 'y')
+		{
+			cout << endl;
+		}
+		else if (ans == 'n')
+		{
+			exit(0);
+		}
+		else
+		{
+			err_exit("Wrong char.");
+		}
+		
+	}
+	WIDTH *= UPSCALE;
+	HEIGTH *= UPSCALE;
+	startx = -0.5 * kinda_zoom / 2.0;
+	starty = 0 * kinda_zoom;
+
+	W_FACTOR = (double)WIDTH / HEIGTH;
+
+	MAX_RE = startx + W_FACTOR * kinda_zoom / 2;
+	MIN_RE = startx - W_FACTOR * kinda_zoom / 2;
+	MAX_IM = starty + kinda_zoom / 2;
+	MIN_IM = starty - kinda_zoom / 2;
+
+	if (!FILENAME)
+	{
+		char buffer[256];
+		sprintf(buffer, "mandelbrot_%dx_%dx%d_%diters.png", UPSCALE, WIDTH / UPSCALE, HEIGTH / UPSCALE, MAX_ITER);
+		FILENAME = buffer;
+	}
+	
+	cout << "Mandelbrot v0.1 by eXCore\n";
+	cout << "Resolution(WxH): " << WIDTH / UPSCALE << "x" << HEIGTH / UPSCALE << " upscaled " << UPSCALE << "x\n";
+	cout << "Maximum iterations: " << MAX_ITER << "\n";
+	cout << "Plane zoom: " << fixed << setprecision(3) << (1.0 / kinda_zoom) << "x\n" << endl;
+
 	high_resolution_clock::time_point t_start = high_resolution_clock::now();
+
 	create_png();
+
 	unsigned max_threads = thread::hardware_concurrency();
-	constexpr unsigned DIV_INTO = max(1u, HEIGTH * MAX_ITER / 2000 / 50);
+	unsigned DIV_INTO = max(1u, HEIGTH * MAX_ITER / 2000 / 50);
 	//unsigned max_threads = 1; // for test purposes
+
 	vector<thread> threads(max_threads);
+
 	unsigned prev = 0;
 	for (size_t iteration = 0; iteration < DIV_INTO; iteration++)
 	{
@@ -218,10 +370,10 @@ int main()
 	write_and_close_png();
 	cout << "mandelbrot?" << endl;
 	duration<double> t_span = duration_cast<duration<double>>(t_end - t_start);
-	cout << "process time: " << t_span.count() << "s" << endl;
+	cout << "process time: " << t_span.count() << "s\n" << endl;
 	//cout << "avg i is " << (i_sum) / (WIDTH*HEIGTH) << endl; // needs rewrite to work, considering threads sharing
 
-	cin.ignore();
+	cout << "Press any key to exit...\n";
 	cin.get();
 	return 0;
 }
