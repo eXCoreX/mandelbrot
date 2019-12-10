@@ -1,6 +1,6 @@
 mandelbrot
 
-#Requirements
+# Requirements
 - zlib
 - libpng
 
