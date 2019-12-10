@@ -17,8 +17,8 @@ using namespace chrono;
 
 constexpr unsigned UPSCALE = 4;
 
-constexpr unsigned WIDTH = 1920 * UPSCALE;
-constexpr unsigned HEIGTH = 1080 * UPSCALE;
+constexpr unsigned WIDTH = 2880 * UPSCALE;
+constexpr unsigned HEIGTH = 1800 * UPSCALE;
 constexpr png_byte BIT_DEPTH = 8;
 constexpr png_byte COLOR_TYPE = PNG_COLOR_TYPE_RGBA;
 constexpr unsigned MAX_ITER = 50;
